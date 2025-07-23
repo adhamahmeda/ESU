@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Utility AI Assistant - Advanced Version</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        
+        /* RTL Support */
+        [dir="rtl"] { direction: rtl; text-align: right; }
+        [dir="rtl"] .text-left { text-align: right; }
+        [dir="rtl"] .text-right { text-align: left; }
+        
+        /* Arabic Font Support */
+        @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
+        .arabic-font { font-family: 'Amiri', serif; }
+    </style>
+</head>
+<body class="m-0">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
+        const { jsPDF } = window.jspdf;
+        
+        // Simulated Database System
+        class DatabaseSystem {
+            constructor() {
+                // Initialize database with sample data
+                if (!localStorage.getItem('utilityDB')) {
+                    const initialData = {
+                        users: {
+                            'user001': {
+                                id: 'user001',
+                                name: 'أحمد محمد',
+                                nameEn: 'Ahmed Mohamed',
+                                email: 'ahmed@example.com',
+                                phone: '01234567890',
+                                address: 'القاهرة، مصر',
+                                addressEn: 'Cairo, Egypt',
+                                password: 'password123'
+                            },
+                            'user002': {
+                                id: 'user002',
+                                name: 'سارة علي',
+                                nameEn: 'Sara Ali',
+                                email: 'sara@example.com',
+                                phone: '01234567891',
+                                address: 'الإسكندرية، مصر',
+                                addressEn: 'Alexandria, Egypt',
+                                password: 'password456'
+                            }
+                        },
+                        consumption: {
+                            'user001': [
+                                { id: 1, month: '2024-12', utility: 'gas', meterId: 'GAS009001', units: 511.2, amount: 369.36, status: 'notPaid', dueDate: '2025-01-15' },
+                                { id: 2, month: '2024-12', utility: 'electricity', meterId: 'ELE009002', units: 175.0, amount: 102.96, status: 'notPaid', dueDate: '2025-01-15' },
+                                { id: 3, month: '2024-12', utility: 'water', meterId: 'WAT009003', units: 28.5, amount: 45.60, status: 'notPaid', dueDate: '2025-01-15' },
+                                { id: 4, month: '2024-11', utility: 'gas', meterId: 'GAS009001', units: 492.5, amount: 189.52, status: 'paid', paidDate: '2024-12-10' },
+                                { id: 5, month: '2024-11', utility: 'electricity', meterId: 'ELE009002', units: 324.6, amount: 206.74, status: 'paid', paidDate: '2024-12-10' },
+                                { id: 6, month: '2024-11', utility: 'water', meterId: 'WAT009003', units: 31.2, amount: 49.92, status: 'paid', paidDate: '2024-12-10' },
+                                { id: 7, month: '2024-10', utility: 'gas', meterId: 'GAS009001', units: 447.1, amount: 325.85, status: 'paid', paidDate: '2024-11-12' },
+                                { id: 8, month: '2024-10', utility: 'electricity', meterId: 'ELE009002', units: 393.0, amount: 154.84, status: 'paid', paidDate: '2024-11-12' },
+                                { id: 9, month: '2024-10', utility: 'water', meterId: 'WAT009003', units: 29.8, amount: 47.68, status: 'paid', paidDate: '2024-11-12' }
+                            ],
+                            'user002': [
+                                { id: 10, month: '2024-12', utility: 'gas', meterId: 'GAS009010', units: 425.3, amount: 307.82, status: 'paid', paidDate: '2024-12-20' },
+                                { id: 11, month: '2024-12', utility: 'electricity', meterId: 'ELE009011', units: 298.5, amount: 175.55, status: 'notPaid', dueDate: '2025-01-15' },
+                                { id: 12, month: '2024-12', utility: 'water', meterId: 'WAT009012', units: 35.2, amount: 56.32, status: 'notPaid', dueDate: '2025-01-15' }
+                            ]
+                        },
+                        payments: {
+                            'user001': [
+                                { id: 1, date: '2024-12-10', amount: 446.18, method: 'visa', invoice: 'INV-202411' },
+                                { id: 2, date: '2024-11-12', amount: 528.37, method: 'instapay', invoice: 'INV-202410' }
+                            ]
+                        },
+                        meters: {
+                            'user001': [
+                                { id: 'GAS009001', type: 'gas', installDate: '2020-01-15', location: 'Kitchen' },
+                                { id: 'ELE009002', type: 'electricity', installDate: '2020-01-15', location: 'Main Board' },
+                                { id: 'WAT009003', type: 'water', installDate: '2020-01-15', location: 'Ground Floor' }
+                            ]
+                        }
+                    };
+                    localStorage.setItem('utilityDB', JSON.stringify(initialData));
+                }
+                this.db = JSON.parse(localStorage.getItem('utilityDB'));
+            }
+
+            // User authentication
+            authenticate(username, password) {
+                const user = this.db.users[username];
+                if (user && user.password === password) {
+                    return { success: true, user };
+                }
+                return { success: false };
+            }
+
+            // Get user-specific consumption data
+            getUserConsumption(userId) {
+                return this.db.consumption[userId] || [];
+            }
+
+            // Get user profile
+            getUserProfile(userId) {
+                return this.db.users[userId];
+            }
+
+            // Get user payments
+            getUserPayments(userId) {
+                return this.db.payments[userId] || [];
+            }
+
+            // Get user meters
+            getUserMeters(userId) {
+                return this.db.meters[userId] || [];
+            }
+
+            // Update consumption status
+            updateConsumptionStatus(userId, consumptionId, status) {
+                const userConsumption = this.db.consumption[userId];
+                const item = userConsumption.find(c => c.id === consumptionId);
+                if (item) {
+                    item.status = status;
+                    if (status === 'paid') {
+                        item.paidDate = new Date().toISOString().split('T')[0];
+                    }
+                    this.saveDB();
+                }
+            }
+
+            // Add payment record
+            addPayment(userId, payment) {
+                if (!this.db.payments[userId]) {
+                    this.db.payments[userId] = [];
+                }
+                this.db.payments[userId].push({
+                    id: Date.now(),
+                    ...payment,
+                    date: new Date().toISOString().split('T')[0]
+                });
+                this.saveDB();
+            }
+
+            // Save database to localStorage
+            saveDB() {
+                localStorage.setItem('utilityDB', JSON.stringify(this.db));
+            }
+        }
+
+        // Initialize database
+        const database = new DatabaseSystem();
+
+        // RAG Agent System
+        class RAGAgent {
+            constructor(language, userContext) {
+                this.language = language;
+                this.userContext = userContext;
+                this.knowledgeBase = {
+                    en: {
+                        greetings: ['Hello', 'Hi', 'Good day', 'Welcome'],
+                        policies: {
+                            gas: 'Gas minimum charge is 50 units per month. Tiered pricing applies above 100 units.',
+                            electricity: 'Electricity has tiered pricing: 0-100 units at 0.58 EGP/unit, 101-200 at 0.68 EGP/unit, above 200 at 0.96 EGP/unit.',
+                            water: 'Water charges: 1.60 EGP per cubic meter. 10% discount for consumption below 20 cubic meters.'
+                        },
+                        faqs: {
+                            'payment methods': 'We accept Visa, MasterCard, InstaPay (01234567890), and bank transfers to account 123-456-789. You can pay online or at any of our service centers.',
+                            'meter reading': 'Meters are read monthly between the 25th and 30th. You can submit self-readings through our app.',
+                            'dispute': 'To dispute a bill, contact customer service with your account number and the specific charges you want to review.'
+                        }
+                    },
+                    ar: {
+                        greetings: ['مرحباً', 'أهلاً', 'يوم سعيد', 'أهلاً وسهلاً'],
+                        policies: {
+                            gas: 'الحد الأدنى لرسوم الغاز هو 50 وحدة شهرياً. يتم تطبيق التسعير المتدرج فوق 100 وحدة.',
+                            electricity: 'الكهرباء لديها تسعير متدرج: 0-100 وحدة بسعر 0.58 جنيه/وحدة، 101-200 بسعر 0.68 جنيه/وحدة، أكثر من 200 بسعر 0.96 جنيه/وحدة.',
+                            water: 'رسوم المياه: 1.60 جنيه لكل متر مكعب. خصم 10% للاستهلاك أقل من 20 متر مكعب.'
+                        },
+                        faqs: {
+                            'طرق الدفع': 'نقبل فيزا وماستركارد وانستاباي (01234567890) والتحويلات البنكية على حساب 123-456-789. يمكنك الدفع عبر الإنترنت أو في أي من مراكز الخدمة.',
+                            'قراءة العداد': 'تتم قراءة العدادات شهرياً بين 25 و30. يمكنك تقديم قراءات ذاتية عبر التطبيق.',
+                            'نزاع': 'للاعتراض على فاتورة، اتصل بخدمة العملاء مع رقم حسابك والرسوم المحددة التي تريد مراجعتها.'
+                        }
+                    }
+                };
+            }
+
+            async processQuery(query, conversationHistory) {
+                // Simulate processing delay
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // Extract intent and entities
+                const intent = this.extractIntent(query);
+                const entities = this.extractEntities(query);
+
+                // Generate contextual response
+                const response = this.generateResponse(intent, entities, conversationHistory);
+
+                return response;
+            }
+
+            extractIntent(query) {
+                const lowerQuery = query.toLowerCase();
+                
+                if (lowerQuery.includes('bill') || lowerQuery.includes('invoice') || lowerQuery.includes('فاتورة')) {
+                    return 'billing';
+                } else if (lowerQuery.includes('pay') || lowerQuery.includes('دفع')) {
+                    return 'payment';
+                } else if (lowerQuery.includes('consumption') || lowerQuery.includes('usage') || lowerQuery.includes('استهلاك')) {
+                    return 'consumption';
+                } else if (lowerQuery.includes('support') || lowerQuery.includes('help') || lowerQuery.includes('دعم') || lowerQuery.includes('مساعدة')) {
+                    return 'support';
+                } else if (lowerQuery.includes('policy') || lowerQuery.includes('سياسة')) {
+                    return 'policy';
+                } else if (lowerQuery.includes('complaint') || lowerQuery.includes('شكوى')) {
+                    return 'complaint';
+                } else {
+                    return 'general';
+                }
+            }
+
+            extractEntities(query) {
+                const entities = {
+                    utilities: [],
+                    timeframe: null,
+                    amount: null
+                };
+
+                // Extract utilities
+                if (query.includes('gas') || query.includes('غاز')) entities.utilities.push('gas');
+                if (query.includes('electricity') || query.includes('كهرباء')) entities.utilities.push('electricity');
+                if (query.includes('water') || query.includes('مياه') || query.includes('ماء')) entities.utilities.push('water');
+
+                // Extract timeframe
+                if (query.includes('this month') || query.includes('هذا الشهر')) entities.timeframe = 'current';
+                if (query.includes('last month') || query.includes('الشهر الماضي')) entities.timeframe = 'previous';
+                if (query.includes('last year') || query.includes('السنة الماضية')) entities.timeframe = 'year';
+
+                return entities;
+            }
+
+            generateResponse(intent, entities, conversationHistory) {
+                const isArabic = this.language === 'ar';
+                const kb = this.knowledgeBase[this.language];
+
+                switch (intent) {
+                    case 'billing':
+                        const unpaidBills = this.userContext.consumption.filter(c => c.status === 'notPaid');
+                        const totalDue = unpaidBills.reduce((sum, bill) => sum + bill.amount, 0);
+                        
+                        if (isArabic) {
+                            return `لديك ${unpaidBills.length} فواتير غير مدفوعة بإجمالي ${totalDue.toFixed(2)} جنيه. تاريخ السداد هو 15/01/2025. يمكنك دفعها عبر الإنترنت أو تحميل الفاتورة للدفع في أحد مراكز الخدمة.`;
+                        } else {
+                            return `You have ${unpaidBills.length} unpaid bills totaling ${totalDue.toFixed(2)} EGP. Due date is 15/01/2025. You can pay online or download the invoice for payment at service centers.`;
+                        }
+
+                    case 'payment':
+                        if (isArabic) {
+                            return `${kb.faqs['طرق الدفع']}\n\nمعلومات الدفع:\n💳 فيزا/ماستركارد: ادفع عبر الإنترنت\n📱 انستاباي: 01234567890\n🏦 التحويل البنكي: 123-456-789\n\nيمكنك أيضاً الدفع في أي من مراكز الخدمة لدينا.`;
+                        } else {
+                            return `${kb.faqs['payment methods']}\n\nPayment Details:\n💳 Visa/MasterCard: Pay online\n📱 InstaPay: 01234567890\n🏦 Bank Transfer: Account 123-456-789\n\nYou can also pay at any of our service centers.`;
+                        }
+
+                    case 'consumption':
+                        const currentMonth = this.userContext.consumption.filter(c => c.month === '2024-12');
+                        const totalUsage = currentMonth.reduce((sum, c) => sum + c.amount, 0);
+                        
+                        if (isArabic) {
+                            let response = `استهلاكك لهذا الشهر:\n`;
+                            currentMonth.forEach(c => {
+                                response += `• ${this.translateUtility(c.utility)}: ${c.units} وحدة - ${c.amount} جنيه\n`;
+                            });
+                            response += `\nالإجمالي: ${totalUsage.toFixed(2)} جنيه`;
+                            return response;
+                        } else {
+                            let response = `Your consumption this month:\n`;
+                            currentMonth.forEach(c => {
+                                response += `• ${c.utility}: ${c.units} units - ${c.amount} EGP\n`;
+                            });
+                            response += `\nTotal: ${totalUsage.toFixed(2)} EGP`;
+                            return response;
+                        }
+
+                    case 'policy':
+                        if (entities.utilities.length > 0) {
+                            const utility = entities.utilities[0];
+                            return kb.policies[utility] || (isArabic ? 'معلومات السياسة غير متوفرة' : 'Policy information not available');
+                        } else {
+                            if (isArabic) {
+                                return 'يرجى تحديد المرفق (غاز، كهرباء، أو مياه) للحصول على معلومات السياسة.';
+                            } else {
+                                return 'Please specify the utility (gas, electricity, or water) for policy information.';
+                            }
+                        }
+
+                    case 'complaint':
+                        const complaintId = 'CMP' + Date.now().toString().slice(-6);
+                        if (isArabic) {
+                            return `تم تسجيل شكواك برقم مرجع: ${complaintId}\n\nسيتواصل معك أحد ممثلي خدمة العملاء خلال 24-48 ساعة.\n\nللمتابعة العاجلة، يمكنك الاتصال على: +20 123 456 7890`;
+                        } else {
+                            return `Your complaint has been registered with reference: ${complaintId}\n\nA customer service representative will contact you within 24-48 hours.\n\nFor urgent follow-up, you can call: +20 123 456 7890`;
+                        }
+
+                    case 'support':
+                        if (isArabic) {
+                            return `يسعدني مساعدتك! يمكنك التواصل معنا عبر:\n\n📧 البريد الإلكتروني: support@utilities.com\n📞 الهاتف: +20 123 456 7890\n💬 الدردشة المباشرة: متاحة 24/7\n📍 أقرب مركز خدمة: القاهرة - شارع التحرير\n\nكيف يمكنني مساعدتك اليوم؟`;
+                        } else {
+                            return `I'm happy to help! You can reach us through:\n\n📧 Email: support@utilities.com\n📞 Phone: +20 123 456 7890\n💬 Live Chat: Available 24/7\n📍 Nearest service center: Cairo - Tahrir Street\n\nHow can I assist you today?`;
+                        }
+
+                    default:
+                        const greeting = kb.greetings[Math.floor(Math.random() * kb.greetings.length)];
+                        if (isArabic) {
+                            return `${greeting}! أنا مساعدك الذكي للمرافق. يمكنني مساعدتك في:\n\n• عرض الفواتير والاستهلاك\n• معلومات الدفع\n• السياسات والأسعار\n• تقديم الشكاوى\n• الدعم الفني\n\nكيف يمكنني خدمتك؟`;
+                        } else {
+                            return `${greeting}! I'm your Smart Utility Assistant. I can help you with:\n\n• View bills and consumption\n• Payment information\n• Policies and pricing\n• File complaints\n• Technical support\n\nHow may I serve you?`;
+                        }
+                }
+            }
+
+            translateUtility(utility) {
+                const translations = {
+                    'gas': 'غاز',
+                    'electricity': 'كهرباء',
+                    'water': 'مياه'
+                };
+                return translations[utility] || utility;
+            }
+        }
+
+        const SmartUtilityAgent = () => {
+            const [language, setLanguage] = useState('');
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
+            const [currentUser, setCurrentUser] = useState(null);
+            const [userConsumption, setUserConsumption] = useState([]);
+            const [messages, setMessages] = useState([]);
+            const [inputMessage, setInputMessage] = useState('');
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [selectedUtility, setSelectedUtility] = useState('all');
+            const [timePeriod, setTimePeriod] = useState('thisMonth');
+            const [showPaymentModal, setShowPaymentModal] = useState(false);
+            const [showAddBalanceModal, setShowAddBalanceModal] = useState(false);
+            const [conversationContext, setConversationContext] = useState([]);
+            const [ragAgent, setRagAgent] = useState(null);
+            const [loginError, setLoginError] = useState('');
+
+            // Multi-language support
+            const translations = {
+                en: {
+                    welcome: "Welcome to Smart Utility Assistant",
+                    selectLanguage: "Select Language",
+                    login: "Login",
+                    logout: "Logout",
+                    username: "Username",
+                    password: "Password",
+                    consumption: "Consumption Summary",
+                    balance: "Balance",
+                    downloadPDF: "Download PDF",
+                    contactSupport: "Contact Support",
+                    fileComplaint: "File Complaint",
+                    paymentMethods: "Payment Methods",
+                    month: "Month",
+                    utility: "Utility",
+                    units: "Units",
+                    amount: "Amount (EGP)",
+                    total: "Total",
+                    gas: "Gas",
+                    electricity: "Electricity",
+                    water: "Water",
+                    typeMessage: "Type your message...",
+                    send: "Send",
+                    aiThinking: "AI is analyzing your request...",
+                    supportEmail: "support@utilities.com",
+                    supportPhone: "+20 123 456 7890",
+                    complaintSubmitted: "Your complaint has been submitted. Reference #",
+                    availablePayments: "Available payment methods: Visa, InstaPay, Bank Transfer",
+                    dashboard: "Dashboard",
+                    aiAssistant: "AI Assistant",
+                    currentBalance: "Current Balance",
+                    lastPayment: "Last Payment",
+                    nextDue: "Payment Due Date",
+                    downloadInvoice: "Download Invoice",
+                    consumptionInfo: "Consumption Info",
+                    consumptionTrends: "Consumption Trends",
+                    monthlyComparison: "Monthly Comparison",
+                    utilityBreakdown: "Utility Breakdown",
+                    savingsTips: "Savings Tips",
+                    averageUsage: "Average Usage",
+                    highestMonth: "Highest Month",
+                    lowestMonth: "Lowest Month",
+                    comparedToLastMonth: "Compared to last month",
+                    makePayment: "Make Payment",
+                    all: "All Utilities",
+                    status: "Status",
+                    paid: "Paid",
+                    notPaid: "Not Paid",
+                    currentUsage: "Current Usage",
+                    currentCost: "Current Cost",
+                    thisMonth: "This Month",
+                    last6Months: "Last 6 Months",
+                    lastYear: "Last Year",
+                    allTime: "From Beginning",
+                    selectPaymentMethod: "Select Payment Method",
+                    visa: "Visa Card",
+                    instapay: "InstaPay",
+                    bankTransfer: "Bank Transfer",
+                    cancel: "Cancel",
+                    confirm: "Confirm",
+                    loginError: "Invalid username or password",
+                    tryDemoAccount: "Try: user001 / password123",
+                    addToBalance: "Add to Balance",
+                    paymentRequired: "Payment required by this date",
+                    change: "Change",
+                    perMonth: "Per utility/month",
+                    unpaidBills: "unpaid bills",
+                    noPending: "No pending",
+                    december: "Dec",
+                    november: "Nov",
+                    october: "Oct",
+                    september: "Sep",
+                    august: "Aug",
+                    july: "Jul"
+                },
+                ar: {
+                    welcome: "مرحباً بك في مساعد المرافق الذكي",
+                    selectLanguage: "اختر اللغة",
+                    login: "تسجيل الدخول",
+                    logout: "تسجيل الخروج",
+                    username: "اسم المستخدم",
+                    password: "كلمة المرور",
+                    consumption: "ملخص الاستهلاك",
+                    balance: "الرصيد",
+                    downloadPDF: "تحميل PDF",
+                    contactSupport: "اتصل بالدعم",
+                    fileComplaint: "تقديم شكوى",
+                    paymentMethods: "طرق الدفع",
+                    month: "الشهر",
+                    utility: "المرفق",
+                    units: "الوحدات",
+                    amount: "المبلغ (جنيه)",
+                    total: "الإجمالي",
+                    gas: "غاز",
+                    electricity: "كهرباء",
+                    water: "مياه",
+                    typeMessage: "اكتب رسالتك...",
+                    send: "إرسال",
+                    aiThinking: "الذكاء الاصطناعي يحلل طلبك...",
+                    supportEmail: "support@utilities.com",
+                    supportPhone: "+20 123 456 7890",
+                    complaintSubmitted: "تم تقديم شكواك. المرجع #",
+                    availablePayments: "طرق الدفع المتاحة: فيزا، انستاباي، تحويل بنكي",
+                    dashboard: "لوحة التحكم",
+                    aiAssistant: "المساعد الذكي",
+                    currentBalance: "الرصيد الحالي",
+                    lastPayment: "آخر دفعة",
+                    nextDue: "تاريخ السداد",
+                    downloadInvoice: "تحميل الفاتورة",
+                    consumptionInfo: "معلومات الاستهلاك",
+                    consumptionTrends: "اتجاهات الاستهلاك",
+                    monthlyComparison: "المقارنة الشهرية",
+                    utilityBreakdown: "تفصيل المرافق",
+                    savingsTips: "نصائح التوفير",
+                    averageUsage: "متوسط الاستخدام",
+                    highestMonth: "أعلى شهر",
+                    lowestMonth: "أقل شهر",
+                    comparedToLastMonth: "مقارنة بالشهر الماضي",
+                    makePayment: "إجراء دفعة",
+                    all: "جميع المرافق",
+                    status: "الحالة",
+                    paid: "مدفوع",
+                    notPaid: "غير مدفوع",
+                    currentUsage: "الاستخدام الحالي",
+                    currentCost: "التكلفة الحالية",
+                    thisMonth: "هذا الشهر",
+                    last6Months: "آخر 6 أشهر",
+                    lastYear: "السنة الماضية",
+                    allTime: "من البداية",
+                    selectPaymentMethod: "اختر طريقة الدفع",
+                    visa: "بطاقة فيزا",
+                    instapay: "انستاباي",
+                    bankTransfer: "تحويل بنكي",
+                    cancel: "إلغاء",
+                    confirm: "تأكيد",
+                    loginError: "اسم المستخدم أو كلمة المرور غير صحيحة",
+                    tryDemoAccount: "جرب: user001 / password123",
+                    addToBalance: "إضافة للرصيد",
+                    paymentRequired: "مطلوب السداد بحلول هذا التاريخ",
+                    change: "التغيير",
+                    perMonth: "لكل مرفق/شهر",
+                    unpaidBills: "فواتير غير مدفوعة",
+                    noPending: "لا يوجد مستحقات",
+                    december: "ديسمبر",
+                    november: "نوفمبر",
+                    october: "أكتوبر",
+                    september: "سبتمبر",
+                    august: "أغسطس",
+                    july: "يوليو"
+                }
+            };
+
+            const t = (key) => translations[language]?.[key] || key;
+
+            // Get month name
+            const getMonthName = (monthStr) => {
+                const monthMap = {
+                    '12': language === 'ar' ? 'ديسمبر' : 'Dec',
+                    '11': language === 'ar' ? 'نوفمبر' : 'Nov',
+                    '10': language === 'ar' ? 'أكتوبر' : 'Oct',
+                    '09': language === 'ar' ? 'سبتمبر' : 'Sep',
+                    '08': language === 'ar' ? 'أغسطس' : 'Aug',
+                    '07': language === 'ar' ? 'يوليو' : 'Jul'
+                };
+                const month = monthStr.split('-')[1];
+                const year = monthStr.split('-')[0];
+                return `${monthMap[month] || month} ${year}`;
+            };
+
+            // Load user data on login
+            useEffect(() => {
+                if (currentUser) {
+                    const consumption = database.getUserConsumption(currentUser.id);
+                    setUserConsumption(consumption);
+                    
+                    // Initialize RAG agent with user context
+                    const agent = new RAGAgent(language, {
+                        user: currentUser,
+                        consumption: consumption,
+                        meters: database.getUserMeters(currentUser.id),
+                        payments: database.getUserPayments(currentUser.id)
+                    });
+                    setRagAgent(agent);
+                }
+            }, [currentUser, language]);
+
+            // Filter data by time period
+            const filterDataByPeriod = (data) => {
+                const now = new Date();
+                const currentMonth = '2024-12';
+                
+                switch(timePeriod) {
+                    case 'thisMonth':
+                        return data.filter(item => item.month === currentMonth);
+                    case 'last6Months':
+                        return data.filter(item => item.month >= '2024-07');
+                    case 'lastYear':
+                        return data.filter(item => item.month >= '2024-01');
+                    case 'allTime':
+                    default:
+                        return data;
+                }
+            };
+
+            // Calculate current month stats
+            const getCurrentMonthStats = () => {
+                const currentData = userConsumption.filter(item => item.month === '2024-12');
+                const previousData = userConsumption.filter(item => item.month === '2024-11');
+                
+                const currentTotal = currentData.reduce((sum, item) => sum + item.amount, 0);
+                const previousTotal = previousData.reduce((sum, item) => sum + item.amount, 0);
+                const currentUnits = currentData.reduce((sum, item) => sum + item.units, 0);
+                
+                const percentageChange = previousTotal > 0 
+                    ? ((currentTotal - previousTotal) / previousTotal * 100).toFixed(1)
+                    : 0;
+                
+                return { currentTotal, currentUnits, percentageChange };
+            };
+
+            // Get current balance (unpaid bills)
+            const getCurrentBalance = () => {
+                return userConsumption
+                    .filter(item => item.status === 'notPaid')
+                    .reduce((sum, item) => sum + item.amount, 0);
+            };
+
+            // Get next due date
+            const getNextDueDate = () => {
+                const unpaidBills = userConsumption.filter(item => item.status === 'notPaid');
+                if (unpaidBills.length > 0) {
+                    return unpaidBills[0].dueDate || '2025-01-15';
+                }
+                return null;
+            };
+
+            // Generate PDF with proper language support
+            const generatePDF = () => {
+                const doc = new jsPDF();
+                const isArabic = language === 'ar';
+                
+                // Add Arabic font support
+                if (isArabic) {
+                    doc.setLanguage("ar");
+                    doc.setR2L(true);
+                }
+                
+                // Title
+                doc.setFontSize(20);
+                const title = isArabic ? 'تقرير استهلاك المرافق' : 'Utility Consumption Report';
+                doc.text(title, 105, 20, { align: 'center' });
+                
+                // Date and Customer ID
+                doc.setFontSize(12);
+                const dateLabel = isArabic ? 'التاريخ:' : 'Date:';
+                const customerLabel = isArabic ? 'رقم العميل:' : 'Customer ID:';
+                const customerName = isArabic ? 'اسم العميل:' : 'Customer Name:';
+                const userName = isArabic ? currentUser?.name : currentUser?.nameEn;
+                
+                doc.text(`${dateLabel} ${new Date().toLocaleDateString()}`, 20, 40);
+                doc.text(`${customerLabel} ${currentUser?.id || 'USR001'}`, 20, 50);
+                doc.text(`${customerName} ${userName || 'Test User'}`, 20, 60);
+                
+                // Table headers
+                let yPosition = 80;
+                doc.setFontSize(10);
+                const headers = isArabic 
+                    ? ['الشهر', 'المرفق', 'الوحدات', 'المبلغ', 'الحالة']
+                    : ['Month', 'Utility', 'Units', 'Amount', 'Status'];
+                
+                const xPositions = [20, 50, 90, 120, 150];
+                headers.forEach((header, index) => {
+                    doc.text(header, xPositions[index], yPosition);
+                });
+                
+                // Table data
+                yPosition += 10;
+                userConsumption.forEach(item => {
+                    const utility = isArabic 
+                        ? (item.utility === 'gas' ? 'غاز' : item.utility === 'electricity' ? 'كهرباء' : 'مياه')
+                        : item.utility;
+                    const status = isArabic 
+                        ? (item.status === 'paid' ? 'مدفوع' : 'غير مدفوع')
+                        : (item.status === 'paid' ? 'Paid' : 'Not Paid');
+                    
+                    doc.text(getMonthName(item.month), xPositions[0], yPosition);
+                    doc.text(utility, xPositions[1], yPosition);
+                    doc.text(item.units.toString(), xPositions[2], yPosition);
+                    doc.text(`${item.amount} ${isArabic ? 'جنيه' : 'EGP'}`, xPositions[3], yPosition);
+                    doc.text(status, xPositions[4], yPosition);
+                    yPosition += 8;
+                });
+                
+                // Total
+                const total = userConsumption.reduce((sum, item) => sum + item.amount, 0);
+                doc.setFontSize(12);
+                const totalLabel = isArabic ? 'الإجمالي:' : 'Total:';
+                doc.text(`${totalLabel} ${total.toFixed(2)} ${isArabic ? 'جنيه' : 'EGP'}`, 20, yPosition + 10);
+                
+                // Payment information
+                yPosition += 30;
+                doc.setFontSize(10);
+                const paymentTitle = isArabic ? 'معلومات الدفع:' : 'Payment Information:';
+                doc.text(paymentTitle, 20, yPosition);
+                
+                const paymentMethods = isArabic 
+                    ? ['• فيزا: XXXX-XXXX-XXXX', '• انستاباي: 01234567890', '• تحويل بنكي: 123-456-789']
+                    : ['• Visa: XXXX-XXXX-XXXX', '• InstaPay: 01234567890', '• Bank Transfer: 123-456-789'];
+                
+                paymentMethods.forEach((method, index) => {
+                    doc.text(method, 30, yPosition + 10 + (index * 8));
+                });
+                
+                // Save
+                doc.save(`utility_report_${new Date().getTime()}.pdf`);
+            };
+
+            // Generate invoice PDF
+            const generateInvoicePDF = () => {
+                const doc = new jsPDF();
+                const isArabic = language === 'ar';
+                const unpaidData = userConsumption.filter(item => item.status === 'notPaid');
+                
+                if (isArabic) {
+                    doc.setLanguage("ar");
+                    doc.setR2L(true);
+                }
+                
+                // Header
+                doc.setFontSize(20);
+                const title = isArabic ? 'فاتورة المرافق' : 'Utility Invoice';
+                doc.text(title, 105, 20, { align: 'center' });
+                
+                // Invoice details
+                doc.setFontSize(12);
+                const invoiceNo = `INV-${Date.now()}`;
+                const labels = isArabic 
+                    ? {
+                        invoiceNo: 'رقم الفاتورة:',
+                        date: 'التاريخ:',
+                        customerId: 'رقم العميل:',
+                        customerName: 'اسم العميل:',
+                        dueDate: 'تاريخ السداد:'
+                      }
+                    : {
+                        invoiceNo: 'Invoice No:',
+                        date: 'Date:',
+                        customerId: 'Customer ID:',
+                        customerName: 'Customer Name:',
+                        dueDate: 'Due Date:'
+                      };
+                
+                const userName = isArabic ? currentUser?.name : currentUser?.nameEn;
+                
+                doc.text(`${labels.invoiceNo} ${invoiceNo}`, 20, 40);
+                doc.text(`${labels.date} ${new Date().toLocaleDateString()}`, 20, 50);
+                doc.text(`${labels.customerId} ${currentUser?.id}`, 20, 60);
+                doc.text(`${labels.customerName} ${userName}`, 20, 70);
+                doc.text(`${labels.dueDate} ${getNextDueDate() || '2025-01-15'}`, 20, 80);
+                
+                // Unpaid items
+                let yPosition = 100;
+                doc.setFontSize(14);
+                const outstandingLabel = isArabic ? 'المبالغ المستحقة:' : 'Outstanding Amounts:';
+                doc.text(outstandingLabel, 20, yPosition);
+                
+                yPosition += 15;
+                doc.setFontSize(10);
+                unpaidData.forEach(item => {
+                    const utility = isArabic 
+                        ? (item.utility === 'gas' ? 'غاز' : item.utility === 'electricity' ? 'كهرباء' : 'مياه')
+                        : item.utility;
+                    const month = getMonthName(item.month);
+                    doc.text(`${month} - ${utility}: ${item.amount} ${isArabic ? 'جنيه' : 'EGP'}`, 30, yPosition);
+                    yPosition += 8;
+                });
+                
+                // Total due
+                const totalDue = unpaidData.reduce((sum, item) => sum + item.amount, 0);
+                doc.setFontSize(14);
+                const totalDueLabel = isArabic ? 'إجمالي المستحق:' : 'Total Due:';
+                doc.text(`${totalDueLabel} ${totalDue.toFixed(2)} ${isArabic ? 'جنيه' : 'EGP'}`, 20, yPosition + 10);
+                
+                // Payment instructions
+                yPosition += 30;
+                doc.setFontSize(10);
+                const paymentLabel = isArabic ? 'طرق الدفع المتاحة:' : 'Payment Methods:';
+                doc.text(paymentLabel, 20, yPosition);
+                
+                const methods = isArabic 
+                    ? ['• فيزا: XXXX-XXXX-XXXX', '• انستاباي: 01234567890', '• تحويل بنكي: 123-456-789']
+                    : ['• Visa: XXXX-XXXX-XXXX', '• InstaPay: 01234567890', '• Bank Transfer: 123-456-789'];
+                
+                methods.forEach((method, index) => {
+                    doc.text(method, 30, yPosition + 10 + (index * 8));
+                });
+                
+                // Footer
+                doc.setFontSize(8);
+                const footer = isArabic 
+                    ? 'للاستفسارات: support@utilities.com | +20 123 456 7890'
+                    : 'For inquiries: support@utilities.com | +20 123 456 7890';
+                doc.text(footer, 105, 280, { align: 'center' });
+                
+                // Save
+                doc.save(`invoice_${new Date().getTime()}.pdf`);
+            };
+
+            // Enhanced AI Agent processing
+            const processUserIntent = async (message) => {
+                if (!ragAgent) return 'Agent not initialized';
+                
+                // Add to conversation context
+                setConversationContext(prev => [...prev, { role: 'user', content: message }]);
+                
+                // Process with RAG agent
+                const response = await ragAgent.processQuery(message, conversationContext);
+                
+                // Add response to context
+                setConversationContext(prev => [...prev, { role: 'assistant', content: response }]);
+                
+                // Handle special actions
+                if (message.toLowerCase().includes('download') || message.toLowerCase().includes('invoice') || 
+                    message.toLowerCase().includes('فاتورة') || message.toLowerCase().includes('تحميل')) {
+                    setTimeout(() => generateInvoicePDF(), 500);
+                }
+                
+                return response;
+            };
+
+            const handleSendMessage = async (messageToSend = inputMessage) => {
+                if (!messageToSend.trim()) return;
+
+                const userMsg = {
+                    id: Date.now(),
+                    text: messageToSend,
+                    sender: 'user',
+                    timestamp: new Date()
+                };
+
+                setMessages(prev => [...prev, userMsg]);
+                setInputMessage('');
+
+                // Show AI thinking
+                const thinkingMsg = {
+                    id: Date.now() + 1,
+                    text: t('aiThinking'),
+                    sender: 'ai',
+                    thinking: true
+                };
+                setMessages(prev => [...prev, thinkingMsg]);
+
+                // Process with AI
+                setTimeout(async () => {
+                    const response = await processUserIntent(messageToSend);
+                    
+                    setMessages(prev => prev.filter(m => !m.thinking));
+                    
+                    const aiResponse = {
+                        id: Date.now() + 2,
+                        text: response,
+                        sender: 'ai',
+                        timestamp: new Date()
+                    };
+                    
+                    setMessages(prev => [...prev, aiResponse]);
+                }, 1500);
+            };
+
+            // Handle login with Enter key
+            const handleLogin = (username, password) => {
+                const result = database.authenticate(username, password);
+                if (result.success) {
+                    setIsLoggedIn(true);
+                    setCurrentUser(result.user);
+                    setLoginError('');
+                } else {
+                    setLoginError(t('loginError'));
+                }
+            };
+
+            const handleLoginKeyPress = (e) => {
+                if (e.key === 'Enter') {
+                    const username = document.getElementById('username').value;
+                    const password = document.getElementById('password').value;
+                    handleLogin(username, password);
+                }
+            };
+
+            // Payment Modal Component
+            const PaymentModal = () => {
+                if (!showPaymentModal) return null;
+                
+                return (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                            <h3 className="text-xl font-bold mb-4">{t('selectPaymentMethod')}</h3>
+                            <div className="space-y-3">
+                                <button 
+                                    onClick={() => {
+                                        alert(language === 'ar' ? 'جاري توجيهك لبوابة الدفع...' : 'Redirecting to payment gateway...');
+                                        setShowPaymentModal(false);
+                                    }}
+                                    className="w-full p-3 border rounded-lg hover:bg-gray-50 text-left"
+                                >
+                                    💳 {t('visa')}
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        alert(language === 'ar' ? 'رقم انستاباي: 01234567890' : 'InstaPay number: 01234567890');
+                                        setShowPaymentModal(false);
+                                    }}
+                                    className="w-full p-3 border rounded-lg hover:bg-gray-50 text-left"
+                                >
+                                    📱 {t('instapay')}
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        alert(language === 'ar' ? 'رقم الحساب: 123-456-789' : 'Account number: 123-456-789');
+                                        setShowPaymentModal(false);
+                                    }}
+                                    className="w-full p-3 border rounded-lg hover:bg-gray-50 text-left"
+                                >
+                                    🏦 {t('bankTransfer')}
+                                </button>
+                            </div>
+                            <div className="flex gap-3 mt-6">
+                                <button 
+                                    onClick={() => setShowPaymentModal(false)}
+                                    className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
+                                >
+                                    {t('cancel')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // Add Balance Modal
+            const AddBalanceModal = () => {
+                if (!showAddBalanceModal) return null;
+                
+                return (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                            <h3 className="text-xl font-bold mb-4">{t('addToBalance')}</h3>
+                            <input 
+                                type="number" 
+                                placeholder={language === 'ar' ? 'أدخل المبلغ' : 'Enter amount'}
+                                className="w-full p-3 border rounded-lg mb-4"
+                            />
+                            <div className="space-y-3">
+                                <button className="w-full p-3 border rounded-lg hover:bg-gray-50 text-left">
+                                    💳 {t('visa')}
+                                </button>
+                                <button className="w-full p-3 border rounded-lg hover:bg-gray-50 text-left">
+                                    📱 {t('instapay')}
+                                </button>
+                                <button className="w-full p-3 border rounded-lg hover:bg-gray-50 text-left">
+                                    🏦 {t('bankTransfer')}
+                                </button>
+                            </div>
+                            <div className="flex gap-3 mt-6">
+                                <button 
+                                    onClick={() => setShowAddBalanceModal(false)}
+                                    className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
+                                >
+                                    {t('cancel')}
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        alert(language === 'ar' ? 'تمت إضافة الرصيد بنجاح' : 'Balance added successfully');
+                                        setShowAddBalanceModal(false);
+                                    }}
+                                    className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                                >
+                                    {t('confirm')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // Calculate statistics with time period filter
+            const calculateStats = () => {
+                const filteredData = filterDataByPeriod(userConsumption);
+                const filtered = selectedUtility === 'all' 
+                    ? filteredData 
+                    : filteredData.filter(item => item.utility === selectedUtility);
+                
+                const totalAmount = filtered.reduce((sum, item) => sum + item.amount, 0);
+                const avgAmount = filtered.length > 0 ? totalAmount / filtered.length : 0;
+                
+                const monthlyTotals = {};
+                filtered.forEach(item => {
+                    if (!monthlyTotals[item.month]) monthlyTotals[item.month] = 0;
+                    monthlyTotals[item.month] += item.amount;
+                });
+                
+                const months = Object.keys(monthlyTotals);
+                const highestMonth = months.length > 0 ? months.reduce((a, b) => monthlyTotals[a] > monthlyTotals[b] ? a : b) : '';
+                const lowestMonth = months.length > 0 ? months.reduce((a, b) => monthlyTotals[a] < monthlyTotals[b] ? a : b) : '';
+                
+                return { totalAmount, avgAmount, highestMonth, lowestMonth, monthlyTotals };
+            };
+
+            // Get data for charts
+            const getChartData = () => {
+                const filteredData = filterDataByPeriod(userConsumption);
+                const months = [...new Set(filteredData.map(item => item.month))].sort();
+                
+                const gasData = months.map(month => {
+                    const items = filteredData.filter(d => d.month === month && d.utility === 'gas');
+                    return items.reduce((sum, item) => sum + item.amount, 0);
+                });
+                
+                const electricityData = months.map(month => {
+                    const items = filteredData.filter(d => d.month === month && d.utility === 'electricity');
+                    return items.reduce((sum, item) => sum + item.amount, 0);
+                });
+                
+                const waterData = months.map(month => {
+                    const items = filteredData.filter(d => d.month === month && d.utility === 'water');
+                    return items.reduce((sum, item) => sum + item.amount, 0);
+                });
+                
+                return { months, gasData, electricityData, waterData };
+            };
+
+            // Simple Chart Components
+            const SimpleBarChart = ({ data, labels, colors, height = 200 }) => {
+                const maxValue = Math.max(...data.flat());
+                if (maxValue === 0) return <div className="text-center text-gray-500">No data available</div>;
+                
+                return (
+                    <div className="relative" style={{ height }}>
+                        <div className="absolute inset-0 flex items-end justify-between gap-2">
+                            {labels.map((label, index) => (
+                                <div key={index} className="flex-1 flex flex-col items-center">
+                                    <div className="w-full flex gap-1 items-end" style={{ height: height - 30 }}>
+                                        {data.map((dataset, dataIndex) => (
+                                            <div
+                                                key={dataIndex}
+                                                className={`flex-1 ${colors[dataIndex]} transition-all duration-300 hover:opacity-80 rounded-t`}
+                                                style={{
+                                                    height: `${(dataset[index] / maxValue) * 100}%`,
+                                                    minHeight: '2px'
+                                                }}
+                                                title={`${dataset[index].toFixed(2)} EGP`}
+                                            />
+                                        ))}
+                                    </div>
+                                    <span className="text-xs mt-1 text-gray-600">{label}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            };
+
+            const SimplePieChart = ({ data }) => {
+                const total = data.reduce((sum, item) => sum + item.value, 0);
+                if (total === 0) return <div className="text-center text-gray-500">No data available</div>;
+                
+                // For single utility, show a circle with value
+                if (data.length === 1) {
+                    return (
+                        <div className="relative w-48 h-48 mx-auto">
+                            <div 
+                                className="w-full h-full rounded-full flex items-center justify-center"
+                                style={{ backgroundColor: data[0].color }}
+                            >
+                                <div className="text-center text-white">
+                                    <div className="text-3xl font-bold">{data[0].value.toFixed(0)}</div>
+                                    <div className="text-sm">EGP</div>
+                                    <div className="text-xs mt-1">{data[0].name}</div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                }
+                
+                // Multiple utilities pie chart
+                let currentAngle = -90;
+                
+                return (
+                    <div className="relative w-48 h-48 mx-auto">
+                        <svg viewBox="0 0 100 100" className="transform -rotate-90">
+                            {data.map((item, index) => {
+                                const percentage = (item.value / total) * 100;
+                                const angle = (percentage * 360) / 100;
+                                const largeArcFlag = angle > 180 ? 1 : 0;
+                                
+                                const x1 = 50 + 40 * Math.cos((currentAngle * Math.PI) / 180);
+                                const y1 = 50 + 40 * Math.sin((currentAngle * Math.PI) / 180);
+                                
+                                currentAngle += angle;
+                                
+                                const x2 = 50 + 40 * Math.cos((currentAngle * Math.PI) / 180);
+                                const y2 = 50 + 40 * Math.sin((currentAngle * Math.PI) / 180);
+                                
+                                return (
+                                    <path
+                                        key={index}
+                                        d={`M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+                                        fill={item.color}
+                                        className="hover:opacity-80 transition-opacity cursor-pointer"
+                                        onClick={() => alert(`${item.name}: ${item.value.toFixed(2)} EGP`)}
+                                    />
+                                );
+                            })}
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="text-center">
+                                <div className="text-2xl font-bold">{total.toFixed(0)}</div>
+                                <div className="text-xs text-gray-600">EGP</div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // Dashboard Component (Enhanced)
+            const Dashboard = () => {
+                const currentStats = getCurrentMonthStats();
+                const currentBalance = getCurrentBalance();
+                const nextDueDate = getNextDueDate();
+                
+                // Get current and previous month data only
+                const currentMonthData = userConsumption.filter(item => item.month === '2024-12');
+                const previousMonthData = userConsumption.filter(item => item.month === '2024-11');
+                
+                // Calculate current month utility breakdown based on selected utility
+                const getUtilityBreakdown = () => {
+                    if (selectedUtility === 'all') {
+                        return [
+                            { 
+                                name: t('gas'), 
+                                value: currentMonthData.filter(d => d.utility === 'gas').reduce((sum, item) => sum + item.amount, 0),
+                                color: '#FB923C'
+                            },
+                            { 
+                                name: t('electricity'), 
+                                value: currentMonthData.filter(d => d.utility === 'electricity').reduce((sum, item) => sum + item.amount, 0),
+                                color: '#FDE047'
+                            },
+                            { 
+                                name: t('water'), 
+                                value: currentMonthData.filter(d => d.utility === 'water').reduce((sum, item) => sum + item.amount, 0),
+                                color: '#60A5FA'
+                            }
+                        ];
+                    } else {
+                        const utilityData = currentMonthData.filter(d => d.utility === selectedUtility);
+                        const value = utilityData.reduce((sum, item) => sum + item.amount, 0);
+                        const color = selectedUtility === 'gas' ? '#FB923C' : 
+                                     selectedUtility === 'electricity' ? '#FDE047' : '#60A5FA';
+                        return [{
+                            name: t(selectedUtility),
+                            value: value,
+                            color: color
+                        }];
+                    }
+                };
+                
+                return (
+                    <div className="space-y-6">
+                        {/* Current Balance and Next Due Date */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h3 className="text-lg font-semibold mb-2">{t('currentBalance')}</h3>
+                                        <p className="text-3xl font-bold text-red-600">{currentBalance.toFixed(2)} EGP</p>
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            {userConsumption.filter(i => i.status === 'notPaid').length} {t('unpaidBills')}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowAddBalanceModal(true)}
+                                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 text-sm"
+                                    >
+                                        {t('addToBalance')}
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <h3 className="text-lg font-semibold mb-2">{t('nextDue')}</h3>
+                                <p className="text-3xl font-bold text-orange-600">
+                                    {nextDueDate ? new Date(nextDueDate).toLocaleDateString() : t('noPending')}
+                                </p>
+                                <p className="text-sm text-gray-600 mt-1">
+                                    {nextDueDate && t('paymentRequired')}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Consumption Info */}
+                        <div className="bg-white rounded-lg shadow-md p-4">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-bold flex items-center gap-2">
+                                    📊 {t('consumptionInfo')}
+                                </h3>
+                                <select
+                                    value={selectedUtility}
+                                    onChange={(e) => setSelectedUtility(e.target.value)}
+                                    className="px-3 py-2 border rounded-lg text-sm"
+                                >
+                                    <option value="all">{t('all')}</option>
+                                    <option value="gas">{t('gas')}</option>
+                                    <option value="electricity">{t('electricity')}</option>
+                                    <option value="water">{t('water')}</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        {/* Current Usage Stats */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-white rounded-lg shadow-md p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm text-gray-600">{t('currentUsage')}</span>
+                                    <span className="text-blue-500">📊</span>
+                                </div>
+                                <p className="text-2xl font-bold">
+                                    {selectedUtility === 'all' 
+                                        ? currentStats.currentUnits.toFixed(0)
+                                        : currentMonthData
+                                            .filter(d => d.utility === selectedUtility)
+                                            .reduce((sum, d) => sum + d.units, 0)
+                                            .toFixed(0)
+                                    } {t('units')}
+                                </p>
+                                <p className="text-xs text-gray-500">{t('thisMonth')}</p>
+                            </div>
+                            
+                            <div className="bg-white rounded-lg shadow-md p-4">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm text-gray-600">{t('currentCost')}</span>
+                                            <span className="text-green-500">💰</span>
+                                        </div>
+                                        <p className="text-2xl font-bold">
+                                            {selectedUtility === 'all'
+                                                ? currentStats.currentTotal.toFixed(2)
+                                                : currentMonthData
+                                                    .filter(d => d.utility === selectedUtility)
+                                                    .reduce((sum, d) => sum + d.amount, 0)
+                                                    .toFixed(2)
+                                            } EGP
+                                        </p>
+                                        <p className="text-xs text-gray-500">{t('thisMonth')}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowPaymentModal(true)}
+                                        className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200"
+                                    >
+                                        {t('makePayment')}
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-white rounded-lg shadow-md p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm text-gray-600">{t('comparedToLastMonth')}</span>
+                                    {currentStats.percentageChange > 0 ? 
+                                        <span className="text-red-500">📈</span> : 
+                                        <span className="text-green-500">📉</span>
+                                    }
+                                </div>
+                                <p className="text-2xl font-bold">
+                                    {selectedUtility === 'all'
+                                        ? currentStats.percentageChange
+                                        : (() => {
+                                            const current = currentMonthData
+                                                .filter(d => d.utility === selectedUtility)
+                                                .reduce((sum, d) => sum + d.amount, 0);
+                                            const previous = previousMonthData
+                                                .filter(d => d.utility === selectedUtility)
+                                                .reduce((sum, d) => sum + d.amount, 0);
+                                            return previous > 0 
+                                                ? ((current - previous) / previous * 100).toFixed(1)
+                                                : '0';
+                                        })()
+                                    }%
+                                </p>
+                                <p className="text-xs text-gray-500">{t('change')}</p>
+                            </div>
+                        </div>
+                        
+                        {/* Charts */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Monthly Comparison - Current vs Previous */}
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <h4 className="text-lg font-semibold mb-4">{t('monthlyComparison')}</h4>
+                                <SimpleBarChart
+                                    data={
+                                        selectedUtility === 'all' ? [
+                                            [previousMonthData.filter(d => d.utility === 'gas').reduce((sum, d) => sum + d.amount, 0),
+                                             currentMonthData.filter(d => d.utility === 'gas').reduce((sum, d) => sum + d.amount, 0)],
+                                            [previousMonthData.filter(d => d.utility === 'electricity').reduce((sum, d) => sum + d.amount, 0),
+                                             currentMonthData.filter(d => d.utility === 'electricity').reduce((sum, d) => sum + d.amount, 0)],
+                                            [previousMonthData.filter(d => d.utility === 'water').reduce((sum, d) => sum + d.amount, 0),
+                                             currentMonthData.filter(d => d.utility === 'water').reduce((sum, d) => sum + d.amount, 0)]
+                                        ] : selectedUtility === 'gas' ? [
+                                            [previousMonthData.filter(d => d.utility === 'gas').reduce((sum, d) => sum + d.amount, 0),
+                                             currentMonthData.filter(d => d.utility === 'gas').reduce((sum, d) => sum + d.amount, 0)]
+                                        ] : selectedUtility === 'electricity' ? [
+                                            [previousMonthData.filter(d => d.utility === 'electricity').reduce((sum, d) => sum + d.amount, 0),
+                                             currentMonthData.filter(d => d.utility === 'electricity').reduce((sum, d) => sum + d.amount, 0)]
+                                        ] : [
+                                            [previousMonthData.filter(d => d.utility === 'water').reduce((sum, d) => sum + d.amount, 0),
+                                             currentMonthData.filter(d => d.utility === 'water').reduce((sum, d) => sum + d.amount, 0)]
+                                        ]
+                                    }
+                                    labels={[getMonthName('2024-11'), getMonthName('2024-12')]}
+                                    colors={selectedUtility === 'all' 
+                                        ? ['bg-orange-400', 'bg-yellow-400', 'bg-blue-400']
+                                        : selectedUtility === 'gas' ? ['bg-orange-400']
+                                        : selectedUtility === 'electricity' ? ['bg-yellow-400']
+                                        : ['bg-blue-400']
+                                    }
+                                />
+                                {selectedUtility === 'all' && (
+                                    <div className="flex justify-center gap-4 mt-4">
+                                        <span className="flex items-center gap-1 text-xs">
+                                            <div className="w-3 h-3 bg-orange-400 rounded"></div> {t('gas')}
+                                        </span>
+                                        <span className="flex items-center gap-1 text-xs">
+                                            <div className="w-3 h-3 bg-yellow-400 rounded"></div> {t('electricity')}
+                                        </span>
+                                        <span className="flex items-center gap-1 text-xs">
+                                            <div className="w-3 h-3 bg-blue-400 rounded"></div> {t('water')}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {/* Utility Breakdown - Current Month Only */}
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <h4 className="text-lg font-semibold mb-4">{t('utilityBreakdown')} - {t('thisMonth')}</h4>
+                                <SimplePieChart data={getUtilityBreakdown()} />
+                                <div className="mt-4 space-y-2">
+                                    {getUtilityBreakdown().map((item, index) => (
+                                        <div key={index} className="flex items-center justify-between text-sm">
+                                            <span className="flex items-center gap-2">
+                                                <div className="w-3 h-3 rounded" style={{ backgroundColor: item.color }}></div>
+                                                {item.name}
+                                            </span>
+                                            <span className="font-medium">{item.value.toFixed(2)} EGP</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Savings Tips */}
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg shadow-md p-6">
+                            <h4 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                <span className="text-green-600">📉</span>
+                                {t('savingsTips')}
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="bg-white rounded-lg p-4">
+                                    <div className="text-orange-500 mb-2 text-2xl">🔥</div>
+                                    <h5 className="font-medium mb-1">{t('gas')}</h5>
+                                    <p className="text-sm text-gray-600">
+                                        {language === 'ar' 
+                                            ? 'قلل من استخدام السخان واستخدم العزل الحراري'
+                                            : 'Reduce heater usage and improve insulation'}
+                                    </p>
+                                </div>
+                                <div className="bg-white rounded-lg p-4">
+                                    <div className="text-yellow-500 mb-2 text-2xl">⚡</div>
+                                    <h5 className="font-medium mb-1">{t('electricity')}</h5>
+                                    <p className="text-sm text-gray-600">
+                                        {language === 'ar'
+                                            ? 'استخدم مصابيح LED وافصل الأجهزة غير المستخدمة'
+                                            : 'Use LED bulbs and unplug unused devices'}
+                                    </p>
+                                </div>
+                                <div className="bg-white rounded-lg p-4">
+                                    <div className="text-blue-500 mb-2 text-2xl">💧</div>
+                                    <h5 className="font-medium mb-1">{t('water')}</h5>
+                                    <p className="text-sm text-gray-600">
+                                        {language === 'ar'
+                                            ? 'أصلح التسريبات واستخدم رؤوس دش موفرة'
+                                            : 'Fix leaks and use water-saving shower heads'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // Consumption Summary Component (Enhanced)
+            const ConsumptionSummary = () => {
+                const stats = calculateStats();
+                const chartData = getChartData();
+                const totalAmount = userConsumption.reduce((sum, item) => sum + item.amount, 0);
+                
+                // Calculate utility breakdown based on filters
+                const getFilteredUtilityBreakdown = () => {
+                    const filteredData = filterDataByPeriod(userConsumption);
+                    
+                    if (selectedUtility === 'all') {
+                        return [
+                            { 
+                                name: t('gas'), 
+                                value: filteredData.filter(d => d.utility === 'gas').reduce((sum, item) => sum + item.amount, 0),
+                                color: '#FB923C'
+                            },
+                            { 
+                                name: t('electricity'), 
+                                value: filteredData.filter(d => d.utility === 'electricity').reduce((sum, item) => sum + item.amount, 0),
+                                color: '#FDE047'
+                            },
+                            { 
+                                name: t('water'), 
+                                value: filteredData.filter(d => d.utility === 'water').reduce((sum, item) => sum + item.amount, 0),
+                                color: '#60A5FA'
+                            }
+                        ];
+                    } else {
+                        const value = filteredData
+                            .filter(d => d.utility === selectedUtility)
+                            .reduce((sum, item) => sum + item.amount, 0);
+                        const color = selectedUtility === 'gas' ? '#FB923C' : 
+                                     selectedUtility === 'electricity' ? '#FDE047' : '#60A5FA';
+                        return [{
+                            name: t(selectedUtility),
+                            value: value,
+                            color: color
+                        }];
+                    }
+                };
+
+                return (
+                    <div className="space-y-6">
+                        {/* Consumption Table */}
+                        <div className="bg-white rounded-lg shadow-md p-6">
+                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                📊 {t('consumption')}
+                            </h3>
+                            <div className="overflow-x-auto">
+                                <table className="w-full border-collapse">
+                                    <thead>
+                                        <tr className="bg-blue-50">
+                                            <th className="border border-gray-300 p-3 text-left">{t('month')}</th>
+                                            <th className="border border-gray-300 p-3 text-left">{t('utility')}</th>
+                                            <th className="border border-gray-300 p-3 text-left">Meter ID</th>
+                                            <th className="border border-gray-300 p-3 text-right">{t('units')}</th>
+                                            <th className="border border-gray-300 p-3 text-right">{t('amount')}</th>
+                                            <th className="border border-gray-300 p-3 text-center">{t('status')}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {userConsumption.map((item, index) => (
+                                            <tr key={index} className="hover:bg-gray-50">
+                                                <td className="border border-gray-300 p-3">{getMonthName(item.month)}</td>
+                                                <td className="border border-gray-300 p-3">
+                                                    <span className={`inline-flex px-2 py-1 rounded text-sm ${
+                                                        item.utility === 'gas' ? 'bg-orange-100 text-orange-700' :
+                                                        item.utility === 'electricity' ? 'bg-yellow-100 text-yellow-700' :
+                                                        'bg-blue-100 text-blue-700'
+                                                    }`}>
+                                                        {t(item.utility)}
+                                                    </span>
+                                                </td>
+                                                <td className="border border-gray-300 p-3 font-mono text-sm">{item.meterId}</td>
+                                                <td className="border border-gray-300 p-3 text-right">{item.units}</td>
+                                                <td className="border border-gray-300 p-3 text-right">{item.amount.toFixed(2)}</td>
+                                                <td className="border border-gray-300 p-3 text-center">
+                                                    <span className={`inline-flex px-2 py-1 rounded text-xs ${
+                                                        item.status === 'paid' 
+                                                            ? 'bg-green-100 text-green-700' 
+                                                            : 'bg-red-100 text-red-700'
+                                                    }`}>
+                                                        {t(item.status)}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        <tr className="bg-gray-100 font-bold">
+                                            <td colSpan="4" className="border border-gray-300 p-3 text-right">{t('total')}</td>
+                                            <td className="border border-gray-300 p-3 text-right">{totalAmount.toFixed(2)}</td>
+                                            <td className="border border-gray-300 p-3"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="mt-4">
+                                <button
+                                    onClick={generatePDF}
+                                    className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                                >
+                                    ⬇️ {t('downloadPDF')}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Consumption Trends */}
+                        <div className="bg-white rounded-lg shadow-md p-4">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-bold flex items-center gap-2">
+                                    📊 {t('consumptionTrends')}
+                                </h3>
+                                <div className="flex gap-2">
+                                    <select
+                                        value={timePeriod}
+                                        onChange={(e) => setTimePeriod(e.target.value)}
+                                        className="px-3 py-2 border rounded-lg text-sm"
+                                    >
+                                        <option value="thisMonth">{t('thisMonth')}</option>
+                                        <option value="last6Months">{t('last6Months')}</option>
+                                        <option value="lastYear">{t('lastYear')}</option>
+                                        <option value="allTime">{t('allTime')}</option>
+                                    </select>
+                                    <select
+                                        value={selectedUtility}
+                                        onChange={(e) => setSelectedUtility(e.target.value)}
+                                        className="px-3 py-2 border rounded-lg text-sm"
+                                    >
+                                        <option value="all">{t('all')}</option>
+                                        <option value="gas">{t('gas')}</option>
+                                        <option value="electricity">{t('electricity')}</option>
+                                        <option value="water">{t('water')}</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Stats Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-white rounded-lg shadow-md p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm text-gray-600">{t('averageUsage')}</span>
+                                    <span className="text-green-500">📈</span>
+                                </div>
+                                <p className="text-2xl font-bold">{stats.avgAmount.toFixed(2)} EGP</p>
+                                <p className="text-xs text-gray-500">{t('perMonth')}</p>
+                            </div>
+                            
+                            <div className="bg-white rounded-lg shadow-md p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm text-gray-600">{t('highestMonth')}</span>
+                                    <span className="text-red-500">📅</span>
+                                </div>
+                                <p className="text-2xl font-bold">{stats.highestMonth ? getMonthName(stats.highestMonth) : 'N/A'}</p>
+                                <p className="text-xs text-gray-500">{stats.monthlyTotals[stats.highestMonth]?.toFixed(2) || '0'} EGP</p>
+                            </div>
+                            
+                            <div className="bg-white rounded-lg shadow-md p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm text-gray-600">{t('lowestMonth')}</span>
+                                    <span className="text-blue-500">📅</span>
+                                </div>
+                                <p className="text-2xl font-bold">{stats.lowestMonth ? getMonthName(stats.lowestMonth) : 'N/A'}</p>
+                                <p className="text-xs text-gray-500">{stats.monthlyTotals[stats.lowestMonth]?.toFixed(2) || '0'} EGP</p>
+                            </div>
+                        </div>
+                        
+                        {/* Charts */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Monthly Comparison Bar Chart */}
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <h4 className="text-lg font-semibold mb-4">{t('monthlyComparison')}</h4>
+                                <SimpleBarChart
+                                    data={selectedUtility === 'all' 
+                                        ? [chartData.gasData, chartData.electricityData, chartData.waterData]
+                                        : selectedUtility === 'gas' ? [chartData.gasData]
+                                        : selectedUtility === 'electricity' ? [chartData.electricityData]
+                                        : [chartData.waterData]
+                                    }
+                                    labels={chartData.months.map(m => getMonthName(m))}
+                                    colors={selectedUtility === 'all' 
+                                        ? ['bg-orange-400', 'bg-yellow-400', 'bg-blue-400']
+                                        : selectedUtility === 'gas' ? ['bg-orange-400']
+                                        : selectedUtility === 'electricity' ? ['bg-yellow-400']
+                                        : ['bg-blue-400']
+                                    }
+                                />
+                                {selectedUtility === 'all' && (
+                                    <div className="flex justify-center gap-4 mt-4">
+                                        <span className="flex items-center gap-1 text-xs">
+                                            <div className="w-3 h-3 bg-orange-400 rounded"></div> {t('gas')}
+                                        </span>
+                                        <span className="flex items-center gap-1 text-xs">
+                                            <div className="w-3 h-3 bg-yellow-400 rounded"></div> {t('electricity')}
+                                        </span>
+                                        <span className="flex items-center gap-1 text-xs">
+                                            <div className="w-3 h-3 bg-blue-400 rounded"></div> {t('water')}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {/* Utility Breakdown Pie Chart */}
+                            <div className="bg-white rounded-lg shadow-md p-6">
+                                <h4 className="text-lg font-semibold mb-4">{t('utilityBreakdown')}</h4>
+                                <SimplePieChart data={getFilteredUtilityBreakdown()} />
+                                <div className="mt-4 space-y-2">
+                                    {getFilteredUtilityBreakdown().map((item, index) => (
+                                        <div key={index} className="flex items-center justify-between text-sm">
+                                            <span className="flex items-center gap-2">
+                                                <div className="w-3 h-3 rounded" style={{ backgroundColor: item.color }}></div>
+                                                {item.name}
+                                            </span>
+                                            <span className="font-medium">{item.value.toFixed(2)} EGP</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // Language Selection
+            if (!language) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+                            <div className="text-center mb-8">
+                                <div className="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <span className="text-4xl">🌐</span>
+                                </div>
+                                <h1 className="text-3xl font-bold text-gray-800 mb-2">Smart Utility AI Assistant</h1>
+                                <p className="text-gray-600">Powered by Advanced AI & Database Technology</p>
+                            </div>
+                            <div className="space-y-4">
+                                <h2 className="text-lg text-center text-gray-700 mb-4">
+                                    Select Language / اختر اللغة
+                                </h2>
+                                <button
+                                    onClick={() => setLanguage('en')}
+                                    className="w-full px-6 py-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transform hover:scale-105 transition-all flex items-center justify-center gap-3"
+                                >
+                                    <span className="text-2xl">🌐</span>
+                                    English
+                                </button>
+                                <button
+                                    onClick={() => setLanguage('ar')}
+                                    className="w-full px-6 py-4 bg-green-500 text-white rounded-xl hover:bg-green-600 transform hover:scale-105 transition-all flex items-center justify-center gap-3"
+                                >
+                                    <span className="text-2xl">🌐</span>
+                                    العربية
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Login Screen
+            if (!isLoggedIn) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+                            <div className="text-center mb-8">
+                                <div className="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <span className="text-4xl">👤</span>
+                                </div>
+                                <h1 className="text-2xl font-bold text-gray-800">{t('welcome')}</h1>
+                            </div>
+                            <div className="space-y-4">
+                                <input
+                                    type="text"
+                                    id="username"
+                                    placeholder={t('username')}
+                                    className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    onKeyPress={handleLoginKeyPress}
+                                />
+                                <input
+                                    type="password"
+                                    id="password"
+                                    placeholder={t('password')}
+                                    className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    onKeyPress={handleLoginKeyPress}
+                                />
+                                {loginError && (
+                                    <div className="text-red-500 text-sm text-center">
+                                        {loginError}
+                                    </div>
+                                )}
+                                <button
+                                    onClick={() => {
+                                        const username = document.getElementById('username').value;
+                                        const password = document.getElementById('password').value;
+                                        handleLogin(username, password);
+                                    }}
+                                    className="w-full px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium"
+                                >
+                                    {t('login')}
+                                </button>
+                                <p className="text-center text-sm text-gray-600">
+                                    {t('tryDemoAccount')}
+                                </p>
+                            </div>
+                            <div className="mt-4 text-center">
+                                <button
+                                    onClick={() => setLanguage('')}
+                                    className="text-blue-500 hover:underline text-sm"
+                                >
+                                    Change Language / تغيير اللغة
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Main Application
+            return (
+                <div className={`min-h-screen bg-gray-50 ${language === 'ar' ? 'arabic-font' : ''}`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                    <header className="bg-white shadow-md">
+                        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+                            <h1 className="text-2xl font-bold">
+                                {t('welcome')}, {language === 'ar' ? currentUser?.name : currentUser?.nameEn}
+                            </h1>
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+                                    className="px-3 py-2 text-gray-600 hover:text-gray-800"
+                                >
+                                    🌐
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setIsLoggedIn(false);
+                                        setCurrentUser(null);
+                                        setMessages([]);
+                                    }}
+                                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                                >
+                                    {t('logout')}
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Tab Navigation */}
+                    <div className="max-w-7xl mx-auto px-4 mt-6">
+                        <div className="flex gap-2 border-b">
+                            <button
+                                onClick={() => setActiveTab('dashboard')}
+                                className={`px-4 py-2 font-medium transition-colors ${
+                                    activeTab === 'dashboard' 
+                                        ? 'border-b-2 border-blue-500 text-blue-600' 
+                                        : 'text-gray-600 hover:text-gray-800'
+                                }`}
+                            >
+                                <div className="flex items-center gap-2">
+                                    📊 {t('dashboard')}
+                                </div>
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('consumption')}
+                                className={`px-4 py-2 font-medium transition-colors ${
+                                    activeTab === 'consumption' 
+                                        ? 'border-b-2 border-blue-500 text-blue-600' 
+                                        : 'text-gray-600 hover:text-gray-800'
+                                }`}
+                            >
+                                <div className="flex items-center gap-2">
+                                    📄 {t('consumption')}
+                                </div>
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('ai')}
+                                className={`px-4 py-2 font-medium transition-colors ${
+                                    activeTab === 'ai' 
+                                        ? 'border-b-2 border-blue-500 text-blue-600' 
+                                        : 'text-gray-600 hover:text-gray-800'
+                                }`}
+                            >
+                                <div className="flex items-center gap-2">
+                                    💬 {t('aiAssistant')}
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="max-w-7xl mx-auto p-4">
+                        {/* Tab Content */}
+                        {activeTab === 'dashboard' && <Dashboard />}
+                        {activeTab === 'consumption' && <ConsumptionSummary />}
+                        {activeTab === 'ai' && (
+                            <div className="bg-white rounded-lg shadow-lg p-6">
+                                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                    💬 {t('aiAssistant')}
+                                </h3>
+                                
+                                {/* Quick Actions */}
+                                <div className="flex gap-2 mb-4 flex-wrap">
+                                    <button 
+                                        onClick={() => handleSendMessage(language === 'ar' ? 'أريد تحميل الفاتورة' : 'I want to download my invoice')}
+                                        className="px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
+                                    >
+                                        {t('downloadInvoice')}
+                                    </button>
+                                    <button 
+                                        onClick={() => handleSendMessage(language === 'ar' ? 'ما هي طرق الدفع المتاحة؟' : 'What payment methods are available?')}
+                                        className="px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
+                                    >
+                                        {t('paymentMethods')}
+                                    </button>
+                                    <button 
+                                        onClick={() => handleSendMessage(language === 'ar' ? 'أريد التواصل مع الدعم' : 'I want to contact support')}
+                                        className="px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200"
+                                    >
+                                        {t('contactSupport')}
+                                    </button>
+                                </div>
+
+                                {/* Messages */}
+                                <div className="h-96 overflow-y-auto mb-4 p-4 bg-gray-50 rounded-lg">
+                                    {messages.length === 0 && (
+                                        <div className="text-center text-gray-500 mt-8">
+                                            <span className="text-5xl">💬</span>
+                                            <p className="mt-4">
+                                                {language === 'ar' 
+                                                    ? 'مرحباً! كيف يمكنني مساعدتك اليوم؟' 
+                                                    : 'Hello! How can I help you today?'}
+                                            </p>
+                                        </div>
+                                    )}
+                                    {messages.map(msg => (
+                                        <div key={msg.id} className={`mb-3 ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}>
+                                            <div className={`inline-block p-3 rounded-lg max-w-md ${
+                                                msg.sender === 'user' 
+                                                    ? 'bg-blue-500 text-white' 
+                                                    : 'bg-white border border-gray-200'
+                                            } ${msg.thinking ? 'animate-pulse' : ''}`}>
+                                                <p className="text-sm whitespace-pre-line">{msg.text}</p>
+                                                {msg.timestamp && !msg.thinking && (
+                                                    <p className={`text-xs mt-1 ${msg.sender === 'user' ? 'text-blue-100' : 'text-gray-400'}`}>
+                                                        {new Date(msg.timestamp).toLocaleTimeString()}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Input */}
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={inputMessage}
+                                        onChange={(e) => setInputMessage(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                                        placeholder={t('typeMessage')}
+                                        className="flex-1 px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                    <button
+                                        onClick={() => handleSendMessage()}
+                                        className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
+                                    >
+                                        📤 {t('send')}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Payment Modal */}
+                    <PaymentModal />
+                    
+                    {/* Add Balance Modal */}
+                    <AddBalanceModal />
+
+                    {/* Footer */}
+                    <footer className="mt-8 bg-white border-t">
+                        <div className="max-w-7xl mx-auto px-4 py-4 text-center text-sm text-gray-600">
+                            Smart Utility AI Assistant v4.0 | Powered by Advanced AI, RAG & Database Technology
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        // Render the app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<SmartUtilityAgent />);
+    </script>
+</body>
+</html>
